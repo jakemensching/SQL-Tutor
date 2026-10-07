@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL Sprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6FB; --surface:#FFFFFF; --ink:#13224A; --muted:#5A6A8C; --rule:#CBD5E6;
+  --cobalt:#2F5BEA; --cobalt-soft:#E3EAFE; --amber:#F2B33D; --amber-soft:#FDF1D8;
+  --teal:#1E8A6E; --teal-soft:#DDF3EC; --red:#C2413A; --red-soft:#FBE3E1;
+  --sans:"Bricolage Grotesque", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1730; --surface:#18223F; --ink:#E7ECF7; --muted:#9AA8C7; --rule:#2C3A60;
+    --cobalt:#7C9BFF; --cobalt-soft:#22305A; --amber:#F2B33D; --amber-soft:#3A3220;
+    --teal:#3CC79E; --teal-soft:#183A33; --red:#F07B73; --red-soft:#3F2228;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1730; --surface:#18223F; --ink:#E7ECF7; --muted:#9AA8C7; --rule:#2C3A60;
+  --cobalt:#7C9BFF; --cobalt-soft:#22305A; --amber:#F2B33D; --amber-soft:#3A3220;
+  --teal:#3CC79E; --teal-soft:#183A33; --red:#F07B73; --red-soft:#3F2228;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+code,.mono{font-family:var(--mono);font-size:.86em}
+code{background:var(--cobalt-soft);color:var(--ink);padding:.08em .35em;border-radius:4px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.wrap{max-width:680px;margin:0 auto;padding:0 18px 48px}
+
+/* header + tabs */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--rule)}
+.bar{max-width:680px;margin:0 auto;padding:14px 18px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand{font-weight:800;font-size:1.35rem;letter-spacing:-.02em}
+.brand span{font-family:var(--mono);font-weight:600;font-size:.8rem;color:var(--muted);margin-left:6px}
+.sync{font-size:.8rem;color:var(--muted)}
+nav{max-width:680px;margin:0 auto;padding:10px 18px 0;display:flex;gap:2px;overflow-x:auto}
+nav button{white-space:nowrap;background:none;border:0;padding:8px 10px 10px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--cobalt)}
+
+h1{font-size:clamp(2rem,7vw,2.8rem);line-height:1.05;letter-spacing:-.03em;font-weight:800;margin:28px 0 6px}
+h2{font-size:1.25rem;letter-spacing:-.01em;margin:36px 0 10px}
+.sub{color:var(--muted);margin:0 0 18px}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px}
+
+/* checklist */
+.check{list-style:none;margin:0;padding:0}
+.check li{border-top:1px solid var(--rule)}
+.check li:first-child{border-top:0}
+.check label{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;cursor:pointer}
+.check input{appearance:none;flex:none;width:22px;height:22px;margin-top:2px;border:2px solid var(--rule);border-radius:5px;display:grid;place-content:center;background:var(--surface)}
+.check input:checked{background:var(--teal);border-color:var(--teal)}
+.check input:checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.check input:checked + span{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--rule)}
+.goal{font-weight:600;margin:0 0 6px}
+.meta{font-size:.85rem;color:var(--muted)}
+
+/* buttons */
+.btn{border:0;border-radius:8px;padding:12px 18px;font-weight:600;background:var(--cobalt);color:#fff}
+.btn.ghost{background:transparent;color:var(--cobalt);border:1.5px solid var(--cobalt)}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* review */
+.qcount{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-bottom:8px}
+.q{font-size:1.15rem;font-weight:600;margin:0 0 14px;line-height:1.4}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;background:var(--bg);border:1.5px solid var(--rule);border-radius:8px;padding:12px 14px;line-height:1.4}
+.opt:hover:not(:disabled){border-color:var(--cobalt)}
+.opt.right{border-color:var(--teal);background:var(--teal-soft)}
+.opt.wrong{border-color:var(--red);background:var(--red-soft)}
+.opt:disabled{cursor:default}
+.explain{margin:14px 0;padding:12px 14px;border-left:4px solid var(--amber);background:var(--amber-soft);border-radius:0 8px 8px 0}
+.empty{color:var(--muted)}
+
+/* curriculum */
+details.mod{border-top:1px solid var(--rule)}
+details.mod:last-of-type{border-bottom:1px solid var(--rule)}
+details.mod summary{list-style:none;cursor:pointer;padding:16px 0;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+details.mod summary::-webkit-details-marker{display:none}
+.mtitle{font-weight:800;font-size:1.1rem}
+.mprog{font-family:var(--mono);font-size:.8rem;color:var(--muted);white-space:nowrap}
+.sess{margin:0 0 16px;padding:14px 16px;background:var(--surface);border:1px solid var(--rule);border-radius:10px}
+.sess.done{border-color:var(--teal)}
+.sess.current{border-color:var(--cobalt);box-shadow:inset 4px 0 0 var(--cobalt)}
+.shead{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.stitle{font-weight:600}
+.tag{font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--cobalt-soft);color:var(--cobalt);white-space:nowrap}
+.tag.ok{background:var(--teal-soft);color:var(--teal)}
+
+/* progress: result grid hero */
+.prompt{font-family:var(--mono);font-size:.82rem;color:var(--muted);margin:26px 0 8px;overflow-x:auto;white-space:nowrap}
+.prompt b{color:var(--cobalt);font-weight:600}
+.grid-wrap{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table.grid{border-collapse:collapse;width:100%;min-width:440px;font-size:.92rem}
+.grid th{font-family:var(--mono);font-weight:600;font-size:.75rem;text-align:left;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--rule);background:var(--bg)}
+.grid td{padding:10px 12px;border-bottom:1px solid var(--rule)}
+.grid tr:last-child td{border-bottom:0}
+.grid tr.now td{background:var(--amber-soft)}
+.grid td.num{font-family:var(--mono);font-size:.85rem;white-space:nowrap}
+.meter{display:inline-block;width:60px;height:6px;background:var(--rule);border-radius:3px;vertical-align:middle;margin-right:8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--teal)}
+.rows-note{font-family:var(--mono);font-size:.75rem;color:var(--muted);margin-top:6px}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px}
+.stat b{display:block;font-size:1.6rem;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.stat span{font-size:.82rem;color:var(--muted)}
+.weeks{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;align-items:end;height:90px}
+.wk{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.wk .cols{display:flex;flex-direction:column-reverse;gap:3px;width:100%}
+.wk .blk{height:16px;border-radius:3px;background:var(--rule)}
+.wk .blk.on{background:var(--teal)}
+.wk .blk.extra{background:var(--cobalt)}
+.wk small{font-size:.7rem;color:var(--muted);font-family:var(--mono)}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.day{border:1.5px solid var(--rule);background:var(--surface);border-radius:8px;padding:8px 10px;font-weight:600;min-width:48px}
+.day[aria-pressed="true"]{border-color:var(--cobalt);background:var(--cobalt-soft);color:var(--cobalt)}
+.danger{background:none;border:0;color:var(--red);padding:0;text-decoration:underline;font-size:.9rem}
+
+.sel{width:100%;font:inherit;padding:10px 12px;border:1.5px solid var(--rule);border-radius:8px;background:var(--surface);color:var(--ink)}
+.sql{display:block;width:100%;min-height:150px;margin:14px 0 10px;padding:12px 14px;font-family:var(--mono);font-size:16px;line-height:1.5;color:var(--ink);background:var(--surface);border:1.5px solid var(--rule);border-radius:10px;resize:vertical;tab-size:2}
+.sql:focus{border-color:var(--cobalt);outline:none}
+.out{margin-top:16px}
+.err{padding:12px 14px;border-left:4px solid var(--red);background:var(--red-soft);border-radius:0 8px 8px 0;font-family:var(--mono);font-size:.85rem;white-space:pre-wrap}
+.win{padding:12px 14px;border-left:4px solid var(--teal);background:var(--teal-soft);border-radius:0 8px 8px 0;font-weight:600;margin-bottom:12px}
+.miss{padding:12px 14px;border-left:4px solid var(--amber);background:var(--amber-soft);border-radius:0 8px 8px 0;margin-bottom:12px}
+.grid td.null{color:var(--muted);font-family:var(--mono);font-size:.8rem}
+.schema{margin-top:22px}
+.schema summary{cursor:pointer;font-weight:600;padding:8px 0}
+.tbl{border-top:1px solid var(--rule);padding:10px 0}
+.tbl button{background:none;border:0;padding:0;font-family:var(--mono);font-weight:600;color:var(--cobalt);font-size:.9rem}
+.tbl div{font-family:var(--mono);font-size:.78rem;color:var(--muted);margin-top:2px;line-height:1.6}
+.small-btn{background:none;border:0;color:var(--cobalt);padding:0;font-weight:600;font-size:.9rem;text-decoration:underline}
+.hidden{display:none!important}
+@media (max-width:560px){.stats{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:no-preference){.opt,.btn{transition:background .15s,border-color .15s}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar"><div class="brand">SQL Sprint<span>2x / week</span></div><div class="sync" id="sync"></div></div>
+  <nav role="tablist">
+    <button role="tab" data-tab="today" aria-selected="true">Today</button>
+    <button role="tab" data-tab="plan" aria-selected="false">Curriculum</button>
+    <button role="tab" data-tab="lab" aria-selected="false">Query lab</button>
+    <button role="tab" data-tab="progress" aria-selected="false">Progress</button>
+  </nav>
+</header>
+<main class="wrap">
+  <section id="today"></section>
+  <section id="plan" class="hidden"></section>
+  <section id="lab" class="hidden"></section>
+  <section id="progress" class="hidden"></section>
+</main>
+
+<script>
+/* ---------- content ---------- */
+const MODULES = [
+  {id:"m1", title:"Foundations"},
+  {id:"m2", title:"Filtering deeper"},
+  {id:"m3", title:"Summarizing data"},
+  {id:"m4", title:"Joins"},
+  {id:"m5", title:"Subqueries and CTEs"},
+  {id:"m6", title:"Transforming data"},
+  {id:"m7", title:"Window functions"},
+  {id:"m8", title:"Real-world SQL"}
+];
+const RAW = [
+ ["m1","Tables, rows and SELECT","Pull exactly the columns you want from one table.",["How a table is built: rows are records, columns are fields","`SELECT`, `FROM`, and `SELECT *` vs naming columns","`AS` to rename output columns","Practice: write 5 SELECT queries on one table"]],
+ ["m1","Filtering with WHERE","Return only the rows that match a condition.",["Comparison operators: `=`, `<>`, `<`, `>`, `<=`, `>=`","Combining conditions with `AND`, `OR`, `NOT`","Why parentheses matter when you mix AND and OR","Practice: 8 WHERE filters mixing text and numbers"]],
+ ["m1","Sorting, limiting, DISTINCT","Answer any top-N question.",["`ORDER BY` with ASC and DESC, sorting by two columns","`LIMIT` for top-N lists","`DISTINCT` to drop duplicate rows","Practice: 5 top-5 / bottom-5 questions"]],
+ ["m2","IN, BETWEEN, LIKE","Filter by lists, ranges and text patterns.",["`IN` for matching a list of values","`BETWEEN` for ranges (both ends included)","`LIKE` with `%` and `_` wildcards","Practice: 6 pattern and range filters"]],
+ ["m2","Working with NULL","Handle missing data without getting burned.",["What NULL means and why `= NULL` never works","`IS NULL` and `IS NOT NULL`","`COALESCE` to fill in missing values","Practice: clean up a table with missing data"]],
+ ["m3","Aggregate functions","Collapse a table into one number.",["`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`","`COUNT(*)` vs `COUNT(col)` vs `COUNT(DISTINCT col)`","How aggregates treat NULLs","Practice: 6 one-number summary questions"]],
+ ["m3","GROUP BY","Get one summary row per category.",["Grouping by one column, then by two","The rule: every selected column is grouped or aggregated","Practice: per-category totals and averages"]],
+ ["m3","HAVING and query order","Filter groups and know what runs when.",["`HAVING` filters groups, `WHERE` filters rows","Logical order: FROM, WHERE, GROUP BY, HAVING, SELECT, ORDER BY, LIMIT","Checkpoint: 10 mixed problems from Sessions 1 to 8"]],
+ ["m4","Keys and INNER JOIN","Combine two tables on a shared key.",["Primary keys and foreign keys","`INNER JOIN ... ON` and table aliases","Practice: join two tables 5 different ways"]],
+ ["m4","LEFT JOIN","Keep everything on one side, even without a match.",["`LEFT JOIN` keeps every left row, NULLs where no match","Finding unmatched rows with `WHERE right.id IS NULL`","ON vs WHERE: how a WHERE can quietly undo a LEFT JOIN","Practice: find customers with no orders"]],
+ ["m4","More joins","Handle any join shape.",["`RIGHT JOIN` and `FULL OUTER JOIN`","Self joins (employee to manager)","Joining 3 or more tables","Practice: a 3-table join question"]],
+ ["m4","Joins plus aggregates","Summarize joined data without inflating numbers.",["Counting and summing after a join","The fan-out trap: one-to-many joins duplicate rows","Checkpoint: 8 join problems, timed"]],
+ ["m5","Subqueries in WHERE","Use one query's answer inside another.",["Scalar subqueries (compare to an average)","`IN (subquery)`","Practice: 5 above-average style questions"]],
+ ["m5","Derived tables and correlated subqueries","Query a query.",["Subqueries in FROM (they need an alias)","Correlated subqueries that reference the outer row","Practice: rewrite one correlated subquery as a join"]],
+ ["m5","EXISTS","Answer has / has-never questions.",["`EXISTS` and `NOT EXISTS`","The `NOT IN` + NULL trap","Practice: has-never-bought-X questions"]],
+ ["m5","CTEs","Write long queries that stay readable.",["`WITH name AS (...)` to name a step","Chaining several CTEs","Checkpoint: rewrite 3 nested queries as CTEs"]],
+ ["m6","CASE WHEN","Bucket and pivot data.",["Bucketing values with `CASE`","Conditional aggregation: `SUM(CASE WHEN ...)`","Practice: build a pivot-style summary"]],
+ ["m6","Strings, dates, casting","Clean messy real-world columns.",["`UPPER`, `LOWER`, `TRIM`, `SUBSTRING`, `||`","Date parts and date math","`CAST` between types","Practice: clean a messy text and date column"]],
+ ["m6","UNION and friends","Stack and compare result sets.",["`UNION` vs `UNION ALL`","`INTERSECT` and `EXCEPT`","Practice: combine two yearly tables"]],
+ ["m7","Intro to window functions","Aggregate without losing rows.",["`OVER()`: aggregates that keep every row","`PARTITION BY`","Practice: compare each row to its group average"]],
+ ["m7","Ranking","Rank rows and handle ties correctly.",["`ROW_NUMBER`, `RANK`, `DENSE_RANK` and how ties differ","Practice: rank products within each category"]],
+ ["m7","Top N per group","Nail the most common interview pattern.",["Why you can't filter a window function in WHERE","Pattern: `ROW_NUMBER` in a CTE, then filter","Practice: top 3 per group on 3 datasets"]],
+ ["m7","LAG and LEAD","Compare each row to the one before it.",["Looking at the previous or next row","Period-over-period change and growth %","Practice: month-over-month growth on revenue data"]],
+ ["m7","Running totals and moving averages","Build time-series metrics.",["`SUM() OVER (ORDER BY ...)` for running totals","Frames: `ROWS BETWEEN 6 PRECEDING AND CURRENT ROW`","Checkpoint: 6 window function problems, timed"]],
+ ["m8","Writing data","Change data without wrecking it.",["`INSERT`, `UPDATE`, `DELETE`","Always run your WHERE as a SELECT first","Transactions: `BEGIN`, `COMMIT`, `ROLLBACK`","Practice: safely fix bad rows in a table"]],
+ ["m8","Designing tables","Build a schema that makes sense.",["`CREATE TABLE` and data types","Primary keys, foreign keys, constraints","Normalization basics","Practice: design tables for a small app"]],
+ ["m8","Making queries fast","Know why a query is slow and fix it.",["What an index is and what it costs on writes","Reading `EXPLAIN` output","Index-friendly filters (don't wrap the column in a function)","Practice: speed up 3 slow queries"]],
+ ["m8","Capstone","Prove it end to end.",["Full analysis on a real econ dataset: question, queries, findings","Timed interview set: 10 classic problems","Pick your next path: analytics, data engineering, or more stats"]]
+];
+const SESSIONS = RAW.map((r,i)=>{
+  const id="s"+(i+1);
+  const items=(i>0?["Warm up: 10 min recalling last session, no notes"]:[]).concat(r[3]);
+  return {id,n:i+1,m:r[0],title:r[1],goal:r[2],week:Math.ceil((i+1)/2),items:items.map((t,j)=>({id:id+"-"+j,t}))};
+});
+// cards: [session#, question, [correct, wrong...], explanation]
+const CRAW = [
+ [1,"What does `SELECT *` return?",["Every column","Only the first column","Only the primary key","The number of rows"],"`*` means all columns. Which rows come back is decided by WHERE, not by `*`."],
+ [1,"Which clause names the table you read from?",["`FROM`","`SELECT`","`WHERE`","`TABLE`"],"`SELECT` picks columns, `FROM` picks the table."],
+ [1,"`SELECT price AS cost FROM items` does what?",["Renames the column in the output only","Renames the column in the table permanently","Adds a new column to the table","Errors out"],"`AS` is just a label for the result. The table itself is untouched."],
+ [2,"Which returns rows where state is not Illinois?",["`WHERE state <> 'IL'`","`WHERE state <> IL`","`WHERE NOT state 'IL'`","`WHERE state = NOT 'IL'`"],"`<>` means not equal (`!=` works in most databases too). Text values need single quotes."],
+ [2,"`WHERE a = 1 OR b = 2 AND c = 3` is read as...",["`a = 1 OR (b = 2 AND c = 3)`","`(a = 1 OR b = 2) AND c = 3`","Strictly left to right","A syntax error"],"AND binds tighter than OR, like multiplication before addition. Use parentheses to be explicit."],
+ [3,"Get the 5 highest salaries",["`ORDER BY salary DESC LIMIT 5`","`ORDER BY salary LIMIT 5`","`LIMIT 5 ORDER BY salary DESC`","`ORDER BY TOP 5 salary`"],"Sort descending first, then LIMIT. LIMIT always goes last."],
+ [3,"`SELECT DISTINCT city, state` removes duplicate...",["city + state combinations","cities only","states only","nothing, DISTINCT needs one column"],"DISTINCT applies to the whole row of selected columns."],
+ [3,"What's the default ORDER BY direction?",["Ascending","Descending","Random","Insertion order"],"No keyword means ASC: smallest to largest, A to Z."],
+ [4,"Does `price BETWEEN 10 AND 20` include 10 and 20?",["Yes, both ends","Only 10","Only 20","Neither"],"BETWEEN is inclusive on both ends: same as `price >= 10 AND price <= 20`."],
+ [4,"Which pattern matches both 'Chicago' and 'Champaign'?",["`LIKE 'Ch%'`","`LIKE 'Ch_'`","`LIKE '%go'`","`LIKE 'Ch*'`"],"`%` matches any number of characters. `_` matches exactly one. `*` isn't a LIKE wildcard."],
+ [4,"In LIKE, `_` matches...",["Exactly one character","Zero or more characters","An underscore only","Any digit"],"`_` is a single-character wildcard. `'_at'` matches cat, hat, bat."],
+ [5,"Find rows with no email",["`WHERE email IS NULL`","`WHERE email = NULL`","`WHERE email = ''`","`WHERE email == NULL`"],"Comparing anything to NULL with `=` gives UNKNOWN, never true. Use IS NULL. An empty string is a real value, not NULL."],
+ [5,"`NULL + 5` evaluates to...",["NULL","5","0","An error"],"Any arithmetic with NULL produces NULL."],
+ [5,"`COALESCE(phone, 'none')` returns...",["phone if it's not NULL, otherwise 'none'","'none' always","phone always","NULL if phone is NULL"],"COALESCE returns the first non-NULL argument."],
+ [6,"Some emails are NULL. Compare `COUNT(*)` and `COUNT(email)`.",["`COUNT(*)` is bigger","`COUNT(email)` is bigger","They're always equal","`COUNT(email)` errors"],"`COUNT(*)` counts rows. `COUNT(col)` skips NULLs in that column."],
+ [6,"How does `AVG(score)` handle NULL scores?",["Ignores them completely","Treats them as 0","Returns NULL","Errors"],"NULLs are left out of both the sum and the count. Sometimes that's what you want, sometimes it isn't."],
+ [6,"Count unique customers in an orders table",["`COUNT(DISTINCT customer_id)`","`COUNT(customer_id)`","`DISTINCT COUNT(customer_id)`","`SUM(customer_id)`"],"`COUNT(customer_id)` counts orders. Add DISTINCT to count each customer once."],
+ [7,"Which query is valid standard SQL?",["`SELECT dept, AVG(salary) FROM emp GROUP BY dept`","`SELECT dept, name, AVG(salary) FROM emp GROUP BY dept`","`SELECT name, AVG(salary) FROM emp GROUP BY dept`","`SELECT AVG(salary) GROUP BY dept FROM emp`"],"Every selected column must be grouped or aggregated. `name` is neither in the wrong options."],
+ [7,"`GROUP BY region, year` gives one row per...",["unique region + year combination","region","year","row in the table"],"Grouping by two columns makes one group per distinct pair."],
+ [8,"Keep only departments with more than 10 employees",["`HAVING COUNT(*) > 10`","`WHERE COUNT(*) > 10`","`GROUP BY COUNT(*) > 10`","`LIMIT 10`"],"Aggregates can't go in WHERE. HAVING filters after grouping."],
+ [8,"Which of these runs first logically?",["`WHERE`","`HAVING`","`SELECT`","`ORDER BY`"],"FROM, WHERE, GROUP BY, HAVING, SELECT, ORDER BY, LIMIT."],
+ [8,"Why can't you usually use a SELECT alias in WHERE?",["WHERE runs before SELECT","Aliases only work in GROUP BY","WHERE ignores column names","You can, always"],"The alias doesn't exist yet when WHERE runs. ORDER BY runs after SELECT, so aliases work there."],
+ [9,"An INNER JOIN returns...",["Only rows with a match in both tables","Every row from both tables","Every row from the left table","Every combination of rows"],"No match on either side means the row is dropped."],
+ [9,"A foreign key is...",["A column that points to another table's primary key","A key from another database","Any unique column","An encrypted ID"],"`orders.customer_id` pointing to `customers.id` is the classic example."],
+ [10,"LEFT JOIN customers to orders. A customer with no orders shows up...",["Once, with NULLs in the order columns","Not at all","Once per order in the table","As an error"],"LEFT JOIN keeps every left row and fills missing right-side columns with NULL."],
+ [10,"Find customers with no orders",["LEFT JOIN orders, then `WHERE o.id IS NULL`","INNER JOIN orders, then `WHERE o.id IS NULL`","`WHERE orders = 0`","LEFT JOIN orders, then `WHERE o.id IS NOT NULL`"],"The unmatched rows are exactly the ones where the right side came back NULL. This is the anti-join pattern."],
+ [10,"After a LEFT JOIN, adding `WHERE o.status = 'paid'`...",["Drops unmatched rows, acting like an inner join","Has no effect on unmatched rows","Only filters the right table","Is a syntax error"],"Unmatched rows have NULL status, which fails the WHERE. Put that condition in the ON clause to keep them."],
+ [11,"A self join is useful for...",["Comparing rows within the same table, like employee to manager","Copying a table","Removing duplicates","Joining two databases"],"Alias the same table twice: `emp e JOIN emp m ON e.manager_id = m.id`."],
+ [11,"FULL OUTER JOIN keeps...",["All rows from both tables","Only matched rows","All left rows","All right rows"],"Matched where possible, NULLs on whichever side has no match. Not supported in MySQL."],
+ [12,"10 customers, each with exactly 3 orders. An INNER JOIN returns how many rows?",["30","10","3","13"],"One row per matching pair. One-to-many joins multiply rows."],
+ [12,"You join customers to orders, then `SUM(c.credit_limit)`. What goes wrong?",["Each credit limit is counted once per order, inflating the total","Nothing","NULLs break the sum","SUM can't follow a join"],"The fan-out trap. Aggregate before joining, or sum from the one-side table alone."],
+ [13,"Employees earning above the company average",["`WHERE salary > (SELECT AVG(salary) FROM emp)`","`WHERE salary > AVG(salary)`","`HAVING salary > AVG(salary)`","`WHERE AVG(salary) < salary`"],"Aggregates can't sit directly in WHERE. Compute the average in a subquery."],
+ [13,"A scalar subquery must return...",["One row, one column","One column, any number of rows","Any table","At least two rows"],"It stands in for a single value, so it has to be exactly one."],
+ [14,"A correlated subquery...",["References the outer query and conceptually runs per outer row","Runs once for the whole query","Can only appear in FROM","Can't use aggregates"],"Example: compare each employee to their own department's average."],
+ [14,"A subquery in FROM needs...",["An alias, in most databases","A primary key","An ORDER BY","Nothing special"],"`FROM (SELECT ...) AS t`. Postgres and MySQL require the alias."],
+ [15,"`WHERE id NOT IN (subquery)` and the subquery returns a NULL. Result?",["No rows","All rows","Only NULL rows","An error"],"`x <> NULL` is UNKNOWN, so nothing passes. Use NOT EXISTS instead."],
+ [15,"EXISTS checks...",["Whether the subquery returns at least one row","Whether a table exists","Whether a column is NULL","How many rows match"],"It stops at the first match, which is often fast."],
+ [16,"A CTE starts with...",["`WITH name AS (...)`","`CREATE CTE name`","`DEFINE name AS`","`TEMP name = (...)`"],"Then you query it like a table right after."],
+ [16,"Can a later CTE reference an earlier one in the same WITH?",["Yes","No","Only in Postgres","Only if recursive"],"`WITH a AS (...), b AS (SELECT ... FROM a)` works. That's how you chain steps."],
+ [17,"Count paid and unpaid orders in one row",["`SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END)`","`COUNT(status = 'paid')` everywhere","`GROUP BY 'paid'`","`WHERE status IN ('paid')`"],"Conditional aggregation: one CASE per bucket inside SUM or COUNT."],
+ [17,"CASE with no ELSE, and nothing matches. Result?",["NULL","0","An error","An empty string"],"Missing ELSE means ELSE NULL."],
+ [18,"In Postgres and SQLite, which joins two strings?",["`first || ' ' || last`","`first + ' ' + last`","`first & last`","`JOIN(first, last)`"],"`||` is standard SQL concatenation. SQL Server uses `+`, and `CONCAT()` works in most."],
+ [18,"`CAST('42' AS INTEGER)` does what?",["Turns the text '42' into the number 42","Rounds 42","Creates a column","Nothing"],"CAST converts types. Handy when numbers get stored as text."],
+ [19,"UNION vs UNION ALL",["UNION removes duplicates, UNION ALL keeps them","UNION ALL removes duplicates","They're identical","UNION ALL sorts the result"],"UNION ALL skips the dedupe step, so it's faster when you know there are no duplicates."],
+ [19,"To UNION two queries they need...",["The same number of columns with compatible types","The same table","The same WHERE clause","A shared key"],"Column names come from the first query."],
+ [20,"Key difference between window functions and GROUP BY",["Window functions keep every row","Window functions are faster","GROUP BY keeps every row","No difference"],"GROUP BY collapses rows. A window adds the calculation next to each row."],
+ [20,"`AVG(salary) OVER (PARTITION BY dept)` gives each row...",["Its department's average salary","The company-wide average","A running average","Its rank"],"PARTITION BY is like GROUP BY for windows, but the rows stay."],
+ [21,"Scores 90, 90, 80. What does RANK() give?",["1, 1, 3","1, 1, 2","1, 2, 3","1, 2, 2"],"RANK skips after ties. DENSE_RANK gives 1, 1, 2. ROW_NUMBER gives 1, 2, 3."],
+ [21,"Which ranking function never repeats a number?",["ROW_NUMBER","RANK","DENSE_RANK","NTILE"],"ROW_NUMBER breaks ties arbitrarily unless you add another ORDER BY column."],
+ [22,"Why does `WHERE ROW_NUMBER() OVER (...) <= 3` fail?",["Window functions run after WHERE","ROW_NUMBER can't be filtered ever","It needs HAVING","It needs LIMIT"],"Compute it in a CTE or subquery, then filter `rn <= 3` outside."],
+ [22,"Top 3 earners per department. The window is...",["`PARTITION BY dept ORDER BY salary DESC`","`PARTITION BY salary ORDER BY dept`","`ORDER BY dept` only","`GROUP BY dept`"],"Partition by the group, order by the thing you're ranking."],
+ [23,"`LAG(revenue) OVER (ORDER BY month)` returns...",["The previous month's revenue","The next month's revenue","The lowest revenue","A running total"],"LAG looks back, LEAD looks forward. The first row gets NULL."],
+ [23,"Month-over-month growth %",["`(rev - LAG(rev) OVER w) / LAG(rev) OVER w * 100`","`LAG(rev) / rev`","`rev - LEAD(rev)`","`SUM(rev) / COUNT(rev)`"],"Change divided by the previous value. Watch for integer division in some databases."],
+ [24,"`SUM(sales) OVER (ORDER BY day)` gives...",["A running total","Total sales on every row","Daily sales","A moving average"],"With ORDER BY, the default frame runs from the first row to the current one."],
+ [24,"A 7-day moving average frame",["`ROWS BETWEEN 6 PRECEDING AND CURRENT ROW`","`ROWS BETWEEN 7 PRECEDING AND CURRENT ROW`","`ROWS 7`","`LAST 7 ROWS`"],"6 before plus the current row equals 7 rows."],
+ [25,"`UPDATE users SET plan = 'pro'` with no WHERE...",["Updates every row","Updates the first row","Errors out","Does nothing"],"The classic disaster. Write the WHERE first, test it as a SELECT."],
+ [25,"Safest habit before a DELETE",["Run the same WHERE as a SELECT first","Add LIMIT 1000","Delete in small batches without checking","Use DROP instead"],"See exactly what you'll delete. Wrapping it in a transaction lets you ROLLBACK."],
+ [26,"A primary key must be...",["Unique and not NULL","A number","The first column","Auto-incrementing"],"Text keys and composite keys are fine. Unique and non-NULL are the rules."],
+ [26,"Normalization mainly aims to...",["Reduce duplicated data","Make queries shorter","Speed up every query","Remove NULLs"],"Store each fact once. The trade-off is more joins."],
+ [27,"An index mainly speeds up...",["Filters, joins and sorts on the indexed column","Every INSERT","Every query equally","Table creation"],"Reads get faster. Writes get a little slower because the index must update too."],
+ [27,"Which filter can typically use an index on `created_at`?",["`created_at >= '2026-01-01'`","`YEAR(created_at) = 2026`","`CAST(created_at AS TEXT) LIKE '2026%'`","`created_at + 1 > '2026-01-01'`"],"Wrapping the column in a function usually blocks the index. Compare the raw column to a range."],
+ [27,"EXPLAIN shows...",["The plan the database will use to run the query","The query's results","Syntax errors","The table schema"],"Look for full table scans on big tables."],
+ [28,"Find duplicate emails",["`GROUP BY email HAVING COUNT(*) > 1`","`WHERE COUNT(email) > 1`","`SELECT DISTINCT email`","`ORDER BY email`"],"Group by the value and keep groups bigger than one."],
+ [28,"Second highest salary, simplest safe approach",["`SELECT MAX(salary) FROM emp WHERE salary < (SELECT MAX(salary) FROM emp)`","`ORDER BY salary DESC LIMIT 2`","`SELECT salary FROM emp WHERE RANK = 2`","`MAX(salary) - 1`"],"Handles ties at the top. `DENSE_RANK() = 2` in a CTE also works."]
+];
+const CARDS = CRAW.map((c,i)=>({id:"c"+i, s:"s"+c[0], q:c[1], a:c[2], e:c[3]}));
+const INTERVAL_DAYS = [0,1,3,7,14,30];
+const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const DAY_FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+/* ---------- state + persistence ---------- */
+const LS_KEY = "sqlsprint:v1";
+const blank = () => ({v:1, checked:{}, done:{}, cards:{}, log:[], days:[2,6], ch:{}, updated:0});
+let S = blank();
+try { const raw = localStorage.getItem(LS_KEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch(e){}
+let dbRef = null, writing = false, pending = false, saveTimer = null;
+const syncEl = document.getElementById("sync");
+function setSync(t){ syncEl.textContent = t; }
+setSync("Saved on this device");
+
+function save(){
+  S.updated = Date.now();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e){}
+  if (!dbRef) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 700);
+}
+async function flush(){
+  if (!dbRef) return;
+  if (writing){ pending = true; return; }
+  writing = true; setSync("Syncing...");
+  try { await dbRef.set(JSON.parse(JSON.stringify(S))); setSync("Synced"); }
+  catch(e){
+    if (e && e.code === "unavailable"){ setTimeout(flush, 1500 + Math.random()*1000); }
+    else { dbRef = null; setSync("Saved on this device"); }
+  }
+  writing = false;
+  if (pending){ pending = false; flush(); }
+}
+(async function connect(){
+  try{
+    if (!window.claude || !window.claude.use) return;
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db || !user) return;
+    const uid = await user.id();
+    if (!uid) return;
+    const ref = db.doc("data/users/" + uid + "/progress");
+    const snap = await ref.get();
+    if (snap.exists){
+      const remote = snap.data();
+      if ((remote.updated||0) >= (S.updated||0)){ S = Object.assign(blank(), JSON.parse(JSON.stringify(remote))); try{localStorage.setItem(LS_KEY, JSON.stringify(S));}catch(e){} }
+      dbRef = ref; setSync("Synced");
+      if ((remote.updated||0) < (S.updated||0)) flush();
+    } else {
+      dbRef = ref;
+      if (S.updated) flush(); else setSync("Synced");
+    }
+    renderAll();
+  }catch(e){ /* stay local */ }
+})();
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmt(s){ return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>"); }
+const DAY = 864e5;
+function startOfDay(t){ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); }
+function weekStart(t){ const d=new Date(startOfDay(t)); const wd=(d.getDay()+6)%7; return d.getTime()-wd*DAY; }
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function sessionComplete(s){ return s.items.every(it=>S.checked[it.id]); }
+function currentSession(){ return SESSIONS.find(s=>!S.done[s.id]) || null; }
+function unlocked(){ return CARDS.filter(c=>S.done[c.s] || S.cards[c.id]); }
+function cardState(c){ return S.cards[c.id] || {box:0, due:0}; }
+function dueCards(){
+  const now = Date.now();
+  return unlocked().filter(c=>cardState(c).due <= now)
+    .sort((a,b)=>cardState(a).box-cardState(b).box || cardState(a).due-cardState(b).due);
+}
+function nextSessionDay(){
+  if (!S.days.length) return null;
+  const today = new Date().getDay();
+  for (let k=0;k<7;k++){ const d=(today+k)%7; if (S.days.includes(d)) return k===0?"today":k===1?"tomorrow":DAY_FULL[d]; }
+  return null;
+}
+
+function toggleItem(id, on){
+  if (on) S.checked[id]=true; else delete S.checked[id];
+  const sid = id.split("-")[0];
+  const s = SESSIONS.find(x=>x.id===sid);
+  const was = !!S.done[sid];
+  if (sessionComplete(s) && !was){
+    S.done[sid] = Date.now();
+    CARDS.filter(c=>c.s===sid).forEach(c=>{ if(!S.cards[c.id]) S.cards[c.id]={box:0,due:Date.now()}; });
+  } else if (!sessionComplete(s) && was){ delete S.done[sid]; }
+  save(); renderAll();
+}
+
+/* ---------- review ---------- */
+let R = {queue:[], i:0, right:0, answered:false, picked:null, opts:[], active:false, practice:false};
+function startReview(practice){
+  const pool = practice ? shuffle(unlocked()) : dueCards();
+  R = {queue:pool.slice(0,3), i:0, right:0, answered:false, picked:null, opts:[], active:true, practice:!!practice};
+  prepCard(); renderToday();
+  const el=$("review"); if(el) el.scrollIntoView({block:"start", behavior:"smooth"});
+}
+function prepCard(){ const c=R.queue[R.i]; if(c){ R.opts = shuffle(c.a.map((t,k)=>({t,ok:k===0}))); R.answered=false; R.picked=null; } }
+function answer(k){
+  if (R.answered) return;
+  const c = R.queue[R.i], ok = R.opts[k].ok;
+  R.answered = true; R.picked = k; if (ok) R.right++;
+  const st = cardState(c);
+  const box = ok ? Math.min(5, st.box+1) : 1;
+  S.cards[c.id] = {box, due: startOfDay(Date.now()) + INTERVAL_DAYS[box]*DAY};
+  S.log.push({t:Date.now(), ok}); if (S.log.length>600) S.log = S.log.slice(-600);
+  save(); renderToday();
+}
+function nextCard(){ R.i++; prepCard(); renderToday(); }
+
+function reviewHTML(){
+  const unl = unlocked().length, due = dueCards().length;
+  if (!R.active){
+    if (!unl) return `<p class="empty">Finish Session 1 to unlock your first review cards.</p>`;
+    if (!due) return `<p class="empty">Nothing due. You're clear until the next card comes back around.</p>
+      <div class="row"><button class="btn ghost" data-act="practice">Practice 3 anyway</button></div>`;
+    return `<p class="goal">${due} card${due>1?"s":""} due</p><p class="meta" style="margin:0 0 14px">3 questions, about 2 minutes. Perfect for between sessions.</p>
+      <button class="btn" data-act="start">Start review</button>`;
+  }
+  if (R.i >= R.queue.length){
+    const more = dueCards().length;
+    return `<p class="goal">${R.right} of ${R.queue.length} right</p>
+      <p class="meta" style="margin:0 0 14px">${R.right===R.queue.length?"Clean sweep. Those cards come back later.":"Missed cards come back tomorrow."}</p>
+      <div class="row">${more?`<button class="btn" data-act="start">Do 3 more (${more} due)</button>`:""}
+      <button class="btn ghost" data-act="close">Done</button></div>`;
+  }
+  const c = R.queue[R.i], sess = SESSIONS.find(s=>s.id===c.s);
+  const opts = R.opts.map((o,k)=>{
+    let cls="opt"; if (R.answered){ if(o.ok) cls+=" right"; else if(k===R.picked) cls+=" wrong"; }
+    return `<button class="${cls}" data-opt="${k}" ${R.answered?"disabled":""}>${fmt(o.t)}</button>`;
+  }).join("");
+  return `<div class="qcount">${R.i+1} / ${R.queue.length}, Session ${sess.n}</div>
+    <p class="q">${fmt(c.q)}</p><div class="opts">${opts}</div>
+    ${R.answered?`<div class="explain">${fmt(c.e)}</div><button class="btn" data-act="next">${R.i+1<R.queue.length?"Next question":"See results"}</button>`:""}`;
+}
+
+/* ---------- renders ---------- */
+function checklistHTML(s){
+  return `<ul class="check">${s.items.map(it=>`<li><label><input type="checkbox" data-item="${it.id}" ${S.checked[it.id]?"checked":""}><span>${fmt(it.t)}</span></label></li>`).join("")}</ul>`;
+}
+function renderToday(){
+  const s = currentSession(), nd = nextSessionDay();
+  const doneCount = Object.keys(S.done).length;
+  let head;
+  if (!s){
+    head = `<h1>All 28 sessions done.</h1><p class="sub">Keep the micro-reviews going so it all sticks.</p>`;
+  } else {
+    const m = MODULES.find(x=>x.id===s.m);
+    head = `<h1>Session ${s.n}: ${esc(s.title)}</h1>
+      <p class="sub">${esc(m.title)}, week ${s.week} of 14${nd?`. Next session day: ${nd}.`:""}</p>
+      <div class="panel"><p class="goal">${esc(s.goal)}</p><p class="meta" style="margin:0 0 4px">Check everything off to finish the session and unlock its review cards.</p>${checklistHTML(s)}
+      <div class="row" style="margin-top:12px"><button class="btn ghost" data-act="lab">Practice in Query lab</button></div></div>`;
+  }
+  $("today").innerHTML = head + `<h2 id="review">Micro-review</h2><div class="panel">${reviewHTML()}</div>
+    <p class="meta" style="margin-top:14px">${doneCount} of 28 sessions done</p>`;
+}
+function renderPlan(){
+  const cur = currentSession();
+  $("plan").innerHTML = `<h1>The 14-week plan</h1><p class="sub">28 sessions, two a week, about 1.5 to 2 hours each. Every session after the first opens with a warm-up.</p>` +
+  MODULES.map(m=>{
+    const ss = SESSIONS.filter(s=>s.m===m.id), d = ss.filter(s=>S.done[s.id]).length;
+    const open = cur && cur.m===m.id;
+    return `<details class="mod" ${open?"open":""}><summary><span class="mtitle">${esc(m.title)}</span><span class="mprog">${d}/${ss.length}  wk ${ss[0].week}-${ss[ss.length-1].week}</span></summary>
+      ${ss.map(s=>{
+        const isDone=!!S.done[s.id], isCur=cur&&cur.id===s.id;
+        return `<div class="sess ${isDone?"done":""} ${isCur?"current":""}"><div class="shead"><span class="stitle">${s.n}. ${esc(s.title)}</span>
+          <span class="tag ${isDone?"ok":""}">${isDone?"Done":isCur?"Up next":"Week "+s.week}</span></div>
+          <p class="meta" style="margin:4px 0 6px">${esc(s.goal)}</p>${checklistHTML(s)}</div>`;
+      }).join("")}</details>`;
+  }).join("");
+}
+function renderProgress(){
+  const cur = currentSession();
+  const rows = MODULES.map(m=>{
+    const ss=SESSIONS.filter(s=>s.m===m.id), d=ss.filter(s=>S.done[s.id]).length;
+    const cs=CARDS.filter(c=>ss.some(s=>s.id===c.s) && (S.done[c.s]||S.cards[c.id]));
+    const mast = cs.length ? Math.round(cs.reduce((a,c)=>a+cardState(c).box,0)/(cs.length*5)*100) : null;
+    const status = d===ss.length?"done":(cur&&cur.m===m.id)?"in progress":d?"started":"locked";
+    return `<tr class="${cur&&cur.m===m.id?"now":""}"><td>${esc(m.title)}</td><td class="num">${d}/${ss.length}</td>
+      <td class="num">${mast===null?"NULL":`<span class="meter"><i style="width:${mast}%"></i></span>${mast}%`}</td><td>${status}</td></tr>`;
+  }).join("");
+  const total = S.log.length, right = S.log.filter(l=>l.ok).length;
+  const acc = total ? Math.round(right/total*100)+"%" : "NULL";
+  const doneN = Object.keys(S.done).length;
+  const ws = weekStart(Date.now());
+  const weeks = [];
+  for (let k=7;k>=0;k--){
+    const a = ws - k*7*DAY, b = a + 7*DAY;
+    const n = Object.values(S.done).filter(t=>t>=a && t<b).length;
+    const blocks = [];
+    for (let j=0;j<Math.max(2,Math.min(n,4));j++) blocks.push(`<div class="blk ${j<n?(j<2?"on":"extra"):""}"></div>`);
+    const dt = new Date(a);
+    weeks.push(`<div class="wk"><div class="cols">${blocks.join("")}</div><small>${dt.getMonth()+1}/${dt.getDate()}</small></div>`);
+  }
+  $("progress").innerHTML = `
+    <div class="prompt"><b>SELECT</b> module, sessions, mastery, status <b>FROM</b> my_progress;</div>
+    <div class="grid-wrap"><table class="grid"><thead><tr><th>module</th><th>sessions</th><th>mastery</th><th>status</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="rows-note">(8 rows) Mastery comes from how far your review cards have climbed.</div>
+    <h2>Totals</h2>
+    <div class="stats"><div class="stat"><b>${doneN}/28</b><span>sessions</span></div>
+      <div class="stat"><b>${total}</b><span>review answers</span></div>
+      <div class="stat"><b>${acc}</b><span>accuracy</span></div>
+      <div class="stat"><b>${Object.keys(S.ch||{}).length}/${CHALLENGES.length}</b><span>lab challenges</span></div></div>
+    <h2>Last 8 weeks</h2>
+    <p class="meta" style="margin:-4px 0 12px">Goal is two green blocks a week.</p>
+    <div class="panel"><div class="weeks">${weeks.join("")}</div></div>
+    <h2>Session days</h2>
+    <p class="meta" style="margin:-4px 0 12px">Pick your two fixed days.</p>
+    <div class="days">${DAY_NAMES.map((n,i)=>`<button class="day" data-day="${i}" aria-pressed="${S.days.includes(i)}">${n}</button>`).join("")}</div>
+    <h2>Start over</h2>
+    <button class="danger" data-act="reset">Reset all progress</button>`;
+}
+function renderAll(){ renderToday(); renderPlan(); renderProgress(); refreshLabStatus(); }
+
+/* ---------- query lab ---------- */
+const SQLJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/sql-asm-memory-growth.js";
+function buildSeed(){
+  let seed = 42;
+  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const pick = a => a[Math.floor(rnd()*a.length)];
+  const q = v => v===null ? "NULL" : typeof v==="number" ? String(v) : "'" + String(v).replace(/'/g,"''") + "'";
+  const ins = (t, rows) => rows.map(r=>`INSERT INTO ${t} VALUES (${r.map(q).join(",")});`).join("\n");
+  const customers = [
+    [1,"Ava Patel","Chicago","IL","2023-02-14","ava.p@mail.com"],[2,"Marcus Lee","Champaign","IL","2023-05-03","mlee@mail.com"],
+    [3,"Sofia Garcia","Des Plaines","IL","2023-07-21",null],[4,"Ethan Brooks","Madison","WI","2023-09-09","ebrooks@mail.com"],
+    [5,"Priya Shah","Indianapolis","IN","2024-01-17","priya.s@mail.com"],[6,"Noah Kim","Chicago","IL","2024-02-02","noahk@mail.com"],
+    [7,"Liam Novak","Milwaukee","WI","2024-03-28",null],[8,"Grace Okafor","Detroit","MI","2024-04-11","grace.o@mail.com"],
+    [9,"Mateo Rossi","Evanston","IL","2024-06-30","mrossi@mail.com"],[10,"Hannah Wu","Ann Arbor","MI","2024-08-15","hwu@mail.com"],
+    [11,"Omar Haddad","Columbus","OH","2024-10-05","omar.h@mail.com"],[12,"Chloe Martin","Cleveland","OH","2025-01-12","mlee@mail.com"],
+    [13,"Diego Ramos","Naperville","IL","2025-03-08",null],[14,"Isla Becker","Minneapolis","MN","2025-05-19","isla.b@mail.com"],
+    [15,"Jonah Price","St. Louis","MO","2025-07-01","ava.p@mail.com"],[16,"Zoe Turner","Urbana","IL","2025-09-23","zturner@mail.com"]
+  ];
+  const products = [
+    [1,"Notebook","Stationery",4.99],[2,"Gel pens 10pk","Stationery",12.5],[3,"Desk lamp","Home",34],[4,"Backpack","Bags",59.99],
+    [5,"Water bottle","Home",18.75],[6,"Laptop sleeve","Bags",27.4],[7,"Wireless mouse","Tech",22.95],[8,"USB-C hub","Tech",45],
+    [9,"Noise-cancel headphones","Tech",149],[10,"Planner","Stationery",16.2],[11,"Throw blanket","Home",39.5],
+    [12,"Graphing calculator","Tech",109.99],[13,"Sticky notes","Stationery",6.25]
+  ];
+  const employees = [
+    [1,"Dana Cole","Executive",210000,null],[2,"Raj Mehta","Engineering",165000,1],[3,"Lena Fischer","Engineering",128000,2],
+    [4,"Tom Baker","Engineering",128000,2],[5,"Yuki Sato","Engineering",112000,2],[6,"Carla Diaz","Sales",120000,1],
+    [7,"Ben Ward","Sales",86000,6],[8,"Amara Obi","Sales",91000,6],[9,"Kyle Grant","Sales",86000,6],
+    [10,"Mia Rossi","Finance",134000,1],[11,"Sam Lowe","Finance",97000,10],[12,"Ivy Chen","Finance",101000,10],
+    [13,"Leo Park","Marketing",95000,1],[14,"Nia Brooks","Marketing",78000,13]
+  ];
+  const buyers = [1,2,4,5,6,7,8,9,10,11,12,14,15];
+  const orderable = [1,2,3,4,5,6,7,8,9,10,12];
+  const statuses = ["paid","paid","paid","shipped","shipped","refunded","pending"];
+  const orders = [], items = [];
+  for (let i=1;i<=40;i++){
+    const y = rnd()<0.45?2024:2025, m = 1+Math.floor(rnd()*12), d = 1+Math.floor(rnd()*28);
+    orders.push([i, pick(buyers), `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`, pick(statuses)]);
+    const n = 1+Math.floor(rnd()*3), used = new Set();
+    for (let k=0;k<n;k++){ const p=pick(orderable); if(used.has(p)) continue; used.add(p); items.push([i,p,1+Math.floor(rnd()*3)]); }
+  }
+  const revenue = [];
+  for (let i=0;i<24;i++){
+    const y = 2024+Math.floor(i/12), m = i%12+1;
+    revenue.push([`${y}-${String(m).padStart(2,"0")}`, Math.round(42000 + i*850 + 6000*Math.sin(i/12*2*Math.PI) + (i*7919)%2300)]);
+  }
+  const econ = [];
+  const st = [["IL","Great Lakes",1060,12.5,4.6],["WI","Great Lakes",410,5.9,3.2],["IN","Great Lakes",480,6.9,3.6],["MI","Great Lakes",680,10.0,4.2],
+              ["OH","Great Lakes",880,11.8,4.1],["MN","Plains",470,5.7,2.9],["MO","Plains",420,6.2,3.5],["IA","Plains",240,3.2,2.8]];
+  st.forEach(([s,r,g,p,u])=>{ econ.push([s,r,2024,g,p,u]); econ.push([s,r,2025,Math.round(g*(1.02+rnd()*0.03)),Math.round(p*(1+rnd()*0.008)*10)/10,Math.round((u+rnd()*0.6-0.2)*10)/10]); });
+  return `
+CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, city TEXT, state TEXT, signup_date TEXT, email TEXT);
+CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, category TEXT, price REAL);
+CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER REFERENCES customers(id), order_date TEXT, status TEXT);
+CREATE TABLE order_items (order_id INTEGER REFERENCES orders(id), product_id INTEGER REFERENCES products(id), qty INTEGER);
+CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER REFERENCES employees(id));
+CREATE TABLE monthly_revenue (month TEXT PRIMARY KEY, revenue INTEGER);
+CREATE TABLE state_econ (state TEXT, region TEXT, year INTEGER, gdp_billions REAL, population_millions REAL, unemployment_rate REAL);
+${ins("customers",customers)}
+${ins("products",products)}
+${ins("orders",orders)}
+${ins("order_items",items)}
+${ins("employees",employees)}
+${ins("monthly_revenue",revenue)}
+${ins("state_econ",econ)}`;
+}
+const SEED_SQL = buildSeed();
+
+const CHALLENGES = [
+ {m:"m1", t:"List every product's name and price, most expensive first.", ordered:true, hint:"`ORDER BY` a column with `DESC`.", sol:"SELECT name, price\nFROM products\nORDER BY price DESC;"},
+ {m:"m1", t:"Which customers live in Illinois? Return their name and city.", hint:"Filter with `WHERE state = 'IL'`. Text needs single quotes.", sol:"SELECT name, city\nFROM customers\nWHERE state = 'IL';"},
+ {m:"m2", t:"Products priced from 20 to 50, both ends included. Return name and price.", hint:"`BETWEEN` is inclusive on both ends.", sol:"SELECT name, price\nFROM products\nWHERE price BETWEEN 20 AND 50;"},
+ {m:"m2", t:"Which customers have no email on file? Return their names.", hint:"`= NULL` never matches. There's a special operator for NULL.", sol:"SELECT name\nFROM customers\nWHERE email IS NULL;"},
+ {m:"m3", t:"How many orders are there in each status? Return status and the count.", hint:"`GROUP BY status` with `COUNT(*)`.", sol:"SELECT status, COUNT(*)\nFROM orders\nGROUP BY status;"},
+ {m:"m3", t:"Which product categories have an average price above 30? Return category and average price.", hint:"Filtering on an aggregate needs `HAVING`, not `WHERE`.", sol:"SELECT category, AVG(price)\nFROM products\nGROUP BY category\nHAVING AVG(price) > 30;"},
+ {m:"m4", t:"For every order, return the order id and the customer's name.", hint:"Join `orders` to `customers` on `orders.customer_id = customers.id`.", sol:"SELECT o.id, c.name\nFROM orders o\nJOIN customers c ON o.customer_id = c.id;"},
+ {m:"m4", t:"Which customers have never placed an order? Return their names.", hint:"`LEFT JOIN` orders, then keep rows where the order side is NULL.", sol:"SELECT c.name\nFROM customers c\nLEFT JOIN orders o ON o.customer_id = c.id\nWHERE o.id IS NULL;"},
+ {m:"m4", t:"List each employee next to their manager's name. Return employee name and manager name (skip anyone without a manager).", hint:"Self join: alias `employees` twice, joined on `e.manager_id = m.id`.", sol:"SELECT e.name, m.name\nFROM employees e\nJOIN employees m ON e.manager_id = m.id;"},
+ {m:"m5", t:"Which employees earn more than the company-wide average salary? Return name and salary.", hint:"Compare to `(SELECT AVG(salary) FROM employees)`.", sol:"SELECT name, salary\nFROM employees\nWHERE salary > (SELECT AVG(salary) FROM employees);"},
+ {m:"m5", t:"Which products have never been ordered? Return their names.", hint:"`NOT EXISTS` with a subquery on `order_items`.", sol:"SELECT p.name\nFROM products p\nWHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.id);"},
+ {m:"m6", t:"Label each product 'budget' (under 20), 'mid' (20 up to under 50) or 'premium' (50 and up). Return name and label.", hint:"`CASE WHEN price < 20 THEN ... WHEN price < 50 THEN ... ELSE ... END`.", sol:"SELECT name,\n  CASE WHEN price < 20 THEN 'budget'\n       WHEN price < 50 THEN 'mid'\n       ELSE 'premium' END\nFROM products;"},
+ {m:"m6", t:"How many customers signed up each year? Return the year and the count.", hint:"In SQLite, `strftime('%Y', signup_date)` pulls out the year.", sol:"SELECT strftime('%Y', signup_date), COUNT(*)\nFROM customers\nGROUP BY strftime('%Y', signup_date);"},
+ {m:"m6", t:"How many paid and refunded orders are there? Return one row with two columns: paid count, refunded count.", hint:"Conditional aggregation: `SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END)`.", sol:"SELECT SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END),\n       SUM(CASE WHEN status = 'refunded' THEN 1 ELSE 0 END)\nFROM orders;"},
+ {m:"m7", t:"Rank employees by salary within each department. Highest is 1, ties share a rank, no gaps. Return name, dept, rank.", hint:"Ties with no gaps means `DENSE_RANK()`. Partition by dept.", sol:"SELECT name, dept,\n  DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC)\nFROM employees;"},
+ {m:"m7", t:"Show month, revenue, and the change from the previous month, in month order.", ordered:true, hint:"`revenue - LAG(revenue) OVER (ORDER BY month)`.", sol:"SELECT month, revenue,\n  revenue - LAG(revenue) OVER (ORDER BY month)\nFROM monthly_revenue\nORDER BY month;"},
+ {m:"m7", t:"Show each month with a running total of revenue, in month order.", ordered:true, hint:"`SUM(revenue) OVER (ORDER BY month)`.", sol:"SELECT month,\n  SUM(revenue) OVER (ORDER BY month)\nFROM monthly_revenue\nORDER BY month;"},
+ {m:"m8", t:"Total revenue per product category (qty times price). Return category and total.", hint:"Join `order_items` to `products`, then `SUM(qty * price)` grouped by category.", sol:"SELECT p.category, SUM(oi.qty * p.price)\nFROM order_items oi\nJOIN products p ON p.id = oi.product_id\nGROUP BY p.category;"},
+ {m:"m8", t:"Data cleanup: find any email used by more than one customer (ignore missing emails). Return the email and how many times it appears.", hint:"`GROUP BY email HAVING COUNT(*) > 1`. Watch out: NULLs form their own group, so filter them out first.", sol:"SELECT email, COUNT(*)\nFROM customers\nWHERE email IS NOT NULL\nGROUP BY email\nHAVING COUNT(*) > 1;"},
+ {m:"m8", t:"Which Great Lakes states grew GDP the most from 2024 to 2025? Return state and growth in billions, biggest first.", ordered:true, hint:"Self join `state_econ` on state, one side year 2024, the other 2025. Or use `LAG`.", sol:"SELECT a.state, b.gdp_billions - a.gdp_billions AS growth\nFROM state_econ a\nJOIN state_econ b ON a.state = b.state AND a.year = 2024 AND b.year = 2025\nWHERE a.region = 'Great Lakes'\nORDER BY growth DESC;"}
+].map((c,i)=>Object.assign({id:"q"+(i+1)},c));
+
+let L = {SQL:null, db:null, loading:null, ch:""};
+function loadSqlJs(){
+  if (L.loading) return L.loading;
+  L.loading = new Promise((res, rej)=>{
+    const s = document.createElement("script"); s.src = SQLJS_URL; s.async = true;
+    s.onload = ()=> window.initSqlJs().then(SQL=>{ L.SQL=SQL; L.db=freshDb(); res(); }, rej);
+    s.onerror = ()=> rej(new Error("load"));
+    document.head.appendChild(s);
+  });
+  return L.loading;
+}
+function freshDb(){ const d = new L.SQL.Database(); d.exec(SEED_SQL); return d; }
+function curChallenge(){ return CHALLENGES.find(c=>c.id===L.ch) || null; }
+
+function buildLab(){
+  $("lab").innerHTML = `<h1>Query lab</h1>
+    <p class="sub">Real SQLite running in your browser. Ctrl or Cmd + Enter runs your query.</p>
+    <select class="sel" id="chsel" aria-label="Challenge"></select>
+    <div class="panel" id="chpanel" style="margin-top:12px"></div>
+    <textarea class="sql" id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SQL editor">SELECT * FROM customers LIMIT 10;</textarea>
+    <div class="row"><button class="btn" data-act="run" id="runbtn">Run</button><button class="btn ghost hidden" data-act="check" id="checkbtn">Check answer</button>
+      <button class="small-btn" data-act="resetdb" style="margin-left:auto">Reset database</button></div>
+    <div class="out" id="out"><p class="meta" id="loadmsg">Open this tab to load the database.</p></div>
+    <details class="schema" id="schema"><summary>Tables</summary><div id="tables"><p class="meta">Loading...</p></div></details>`;
+  $("chsel").addEventListener("change", e=>pickChallenge(e.target.value));
+  $("sql").addEventListener("keydown", e=>{
+    if ((e.metaKey||e.ctrlKey) && e.key==="Enter"){ e.preventDefault(); if (curChallenge()) checkAnswer(); else runQuery(); }
+    else if (e.key==="Tab" && !e.shiftKey){ e.preventDefault(); const t=e.target, a=t.selectionStart; t.setRangeText("  ", a, t.selectionEnd, "end"); }
+  });
+  refreshLabStatus();
+}
+function refreshLabStatus(){
+  const sel = $("chsel"); if (!sel) return;
+  sel.innerHTML = `<option value="">Free play: write anything</option>` + MODULES.map(m=>{
+    const cs = CHALLENGES.filter(c=>c.m===m.id);
+    return `<optgroup label="${esc(m.title)}">${cs.map(c=>`<option value="${c.id}">${S.ch&&S.ch[c.id]?"✓ ":""}${esc(c.t.length>60?c.t.slice(0,58)+"...":c.t)}</option>`).join("")}</optgroup>`;
+  }).join("");
+  sel.value = L.ch;
+  renderChallengePanel();
+}
+function renderChallengePanel(){
+  const c = curChallenge(), p = $("chpanel");
+  if (!c){
+    p.innerHTML = `<p class="goal" style="margin:0">Free play</p><p class="meta" style="margin:4px 0 0">Seven tables to explore: customers, products, orders, order_items, employees, monthly_revenue, state_econ. Open Tables below to see the columns.</p>`;
+    $("checkbtn") && $("checkbtn").classList.add("hidden");
+    return;
+  }
+  const solved = S.ch && S.ch[c.id];
+  p.innerHTML = `<p class="meta" style="margin:0 0 4px">${esc(MODULES.find(m=>m.id===c.m).title)}${solved?", solved ✓":""}${c.ordered?", order matters":""}</p>
+    <p class="goal" style="margin:0 0 10px">${fmt(c.t)}</p>
+    <p class="meta" id="hint" style="margin:0 0 8px"></p>
+    <div class="row"><button class="small-btn" data-act="hint">Hint</button><button class="small-btn" data-act="solution">Show solution</button></div>`;
+  $("checkbtn").classList.remove("hidden");
+}
+function pickChallenge(id){
+  L.ch = id || "";
+  const sel=$("chsel"); if (sel) sel.value = L.ch;
+  renderChallengePanel();
+  if (L.ch) $("sql").value = "-- Write your query here\n";
+  $("out").innerHTML = "";
+}
+async function ensureDb(){
+  if (L.SQL) return true;
+  $("out").innerHTML = `<p class="meta">Loading the database engine...</p>`;
+  try { await loadSqlJs(); renderTables(); return true; }
+  catch(e){ $("out").innerHTML = `<div class="err">The SQL engine didn't load. Check your connection and reopen this tab.</div>`; L.loading=null; return false; }
+}
+function renderTables(){
+  const r = L.db.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
+  const names = r.length ? r[0].values.map(v=>v[0]) : [];
+  $("tables").innerHTML = names.map(n=>{
+    const cols = L.db.exec(`PRAGMA table_info(${n})`)[0].values.map(v=>v[1]+" "+String(v[2]).toLowerCase());
+    const cnt = L.db.exec(`SELECT COUNT(*) FROM ${n}`)[0].values[0][0];
+    return `<div class="tbl"><button data-act="peek" data-t="${esc(n)}">${esc(n)}</button> <span class="meta">${cnt} rows</span><div>${cols.map(esc).join(", ")}</div></div>`;
+  }).join("") || `<p class="meta">No tables. Reset the database to restore them.</p>`;
+}
+function resultHTML(res){
+  if (!res) return `<p class="meta">Query ran. No rows returned.</p>`;
+  const MAX=200, rows=res.values.slice(0,MAX);
+  return `<div class="grid-wrap"><table class="grid"><thead><tr>${res.columns.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r=>`<tr>${r.map(v=>v===null?`<td class="null">NULL</td>`:`<td>${esc(typeof v==="number"&&!Number.isInteger(v)?Math.round(v*10000)/10000:v)}</td>`).join("")}</tr>`).join("")
+  }</tbody></table></div><div class="rows-note">(${res.values.length} row${res.values.length===1?"":"s"})${res.values.length>MAX?", showing first "+MAX:""}</div>`;
+}
+async function runQuery(){
+  if (!(await ensureDb())) return;
+  const text = $("sql").value;
+  try {
+    const out = L.db.exec(text);
+    const changed = L.db.getRowsModified();
+    $("out").innerHTML = out.length ? resultHTML(out[out.length-1]) : `<p class="meta">Done. ${changed} row${changed===1?"":"s"} changed.</p>`;
+    if (/\b(create|drop|alter|insert|update|delete)\b/i.test(text)) renderTables();
+  } catch(e){ $("out").innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+function norm(v){
+  if (v===null || v===undefined) return "NULL";
+  if (typeof v==="number") return String(Math.round(v*10)/10);
+  const n = Number(v); if (v!=="" && !isNaN(n) && /^\s*-?\d/.test(v)) return String(Math.round(n*10)/10);
+  return String(v).trim();
+}
+function sameResult(a, b, ordered){
+  if (!a || !b) return !a && !b;
+  if (a.columns.length !== b.columns.length) return "cols";
+  if (a.values.length !== b.values.length) return "rows";
+  const ra = a.values.map(r=>r.map(norm).join("\u241F")), rb = b.values.map(r=>r.map(norm).join("\u241F"));
+  if (!ordered){ ra.sort(); rb.sort(); }
+  return ra.every((x,i)=>x===rb[i]) ? true : (ordered && ra.slice().sort().every((x,i)=>x===rb.slice().sort()[i]) ? "order" : "values");
+}
+async function checkAnswer(){
+  const c = curChallenge(); if (!c) return runQuery();
+  if (!(await ensureDb())) return;
+  const text = $("sql").value;
+  const d1 = freshDb(), d2 = freshDb();
+  let mine, want;
+  try { const r = d1.exec(text); mine = r[r.length-1]; }
+  catch(e){ d1.close(); d2.close(); $("out").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  const w = d2.exec(c.sol); want = w[w.length-1];
+  d1.close(); d2.close();
+  const verdict = sameResult(mine, want, c.ordered);
+  let msg;
+  if (verdict===true){
+    msg = `<div class="win">Correct ✓</div>`;
+    if (!S.ch[c.id]){ S.ch[c.id]=Date.now(); save(); renderProgress(); refreshLabStatus(); }
+  } else {
+    const why = verdict==="cols" ? `Expected ${want.columns.length} column${want.columns.length>1?"s":""}, you returned ${mine?mine.columns.length:0}.`
+      : verdict==="rows" ? `Expected ${want.values.length} row${want.values.length>1?"s":""}, you returned ${mine?mine.values.length:0}.`
+      : verdict==="order" ? "Right rows, wrong order. Check your ORDER BY."
+      : "Same shape, but some values don't match.";
+    msg = `<div class="miss">Not quite. ${why}</div>`;
+  }
+  $("out").innerHTML = msg + resultHTML(mine);
+}
+function showTab(name){
+  document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected", b.dataset.tab===name));
+  ["today","plan","lab","progress"].forEach(x=>$(x).classList.toggle("hidden", x!==name));
+  window.scrollTo({top:0});
+  if (name==="lab" && !L.SQL) ensureDb().then(ok=>{ if(ok && $("out").querySelector("#loadmsg")) $("out").innerHTML=`<p class="meta">Ready. Hit Run.</p>`; else if (ok && /Loading the database/.test($("out").textContent)) $("out").innerHTML=`<p class="meta">Ready. Hit Run.</p>`; });
+}
+
+/* ---------- events ---------- */
+document.addEventListener("change", e=>{
+  const id = e.target.getAttribute && e.target.getAttribute("data-item");
+  if (id) toggleItem(id, e.target.checked);
+});
+document.addEventListener("click", e=>{
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.tab){ showTab(t.dataset.tab); return; }
+  if (t.dataset.opt!==undefined){ answer(+t.dataset.opt); return; }
+  if (t.dataset.day!==undefined){
+    const d=+t.dataset.day;
+    if (S.days.includes(d)) S.days = S.days.filter(x=>x!==d);
+    else { S.days.push(d); if (S.days.length>2) S.days.shift(); }
+    save(); renderProgress(); renderToday(); return;
+  }
+  const a = t.dataset.act;
+  if (a==="start") startReview(false);
+  else if (a==="practice") startReview(true);
+  else if (a==="next") nextCard();
+  else if (a==="close"){ R.active=false; renderToday(); }
+  else if (a==="lab"){ showTab("lab"); const cur=currentSession(); const m=cur?cur.m:"m8"; const c=CHALLENGES.find(x=>x.m===m&&!S.ch[x.id])||CHALLENGES.find(x=>x.m===m); if(c) pickChallenge(c.id); }
+  else if (a==="run") runQuery();
+  else if (a==="check") checkAnswer();
+  else if (a==="hint"){ const c=curChallenge(); if(c) $("hint").innerHTML=fmt(c.hint); }
+  else if (a==="solution"){ const c=curChallenge(); if(c){ $("sql").value=c.sol; $("hint").innerHTML="Solution loaded into the editor. Run it, then try rewriting it from memory."; } }
+  else if (a==="resetdb"){ if(L.SQL){ L.db.close(); L.db=freshDb(); renderTables(); $("out").innerHTML='<p class="meta">Database reset to the original data.</p>'; } }
+  else if (a==="peek"){ $("sql").value="SELECT * FROM "+t.dataset.t+" LIMIT 10;"; runQuery(); }
+  else if (a==="reset"){ if (confirm("Reset every checkbox, session and review card?")){ S = blank(); save(); R.active=false; renderAll(); } }
+});
+buildLab();
+renderAll();
+</script>
+</body>
+</html>
